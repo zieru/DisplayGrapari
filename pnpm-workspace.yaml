@@ -75,7 +75,7 @@ catalog:
   clsx: ^2.1.1
   commitlint-plugin-function-rules: ^4.0.1
   consola: ^3.4.2
-  cross-env: ^7.0.3
+  cross-env: ^10.0.0
   cspell: ^8.19.3
   cssnano: ^7.0.6
   cz-git: ^1.11.1

@@ -175,8 +175,8 @@ catalogs:
       specifier: ^3.4.2
       version: 3.4.2
     cross-env:
-      specifier: ^7.0.3
-      version: 7.0.3
+      specifier: ^10.0.0
+      version: 10.0.0
     cspell:
       specifier: ^8.19.3
       version: 8.19.3
@@ -543,7 +543,7 @@ importers:
         version: 10.4.21(postcss@8.5.3)
       cross-env:
         specifier: 'catalog:'
-        version: 7.0.3
+        version: 10.0.0
       cspell:
         specifier: 'catalog:'
         version: 8.19.3
@@ -2903,6 +2903,9 @@ packages:
   '@emotion/unitless@0.8.1':
     resolution: {integrity: sha512-KOEGMu6dmJZtpadb476IsZBclKvILjopjUii3V+7MnXIQCYh8W3NgNcgwo21n9LXZX6EDIKvqfjYxXebDwxKmQ==}
 
+  '@epic-web/invariant@1.0.0':
+    resolution: {integrity: sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==}
+
   '@es-joy/jsdoccomment@0.49.0':
     resolution: {integrity: sha512-xjZTSFgECpb9Ohuk5yMX5RhUEbfeQcuOp8IF60e+wyzWEF0M5xeSgqsfLtvPEX8BIyOX9saZqzuGPmZ8oWc+5Q==}
     engines: {node: '>=16'}
@@ -5161,9 +5164,9 @@ packages:
     resolution: {integrity: sha512-onMB0OkDjkXunhdW9htFjEhqrD54+M94i6ackoUkjHKbRnXdyEyKRelp4nJ1kAz32+s27jP1FsebpJCVl0BsvA==}
     engines: {node: '>=18.0'}
 
-  cross-env@7.0.3:
-    resolution: {integrity: sha512-+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw==}
-    engines: {node: '>=10.14', npm: '>=6', yarn: '>=1'}
+  cross-env@10.0.0:
+    resolution: {integrity: sha512-aU8qlEK/nHYtVuN4p7UQgAwVljzMg8hB4YK5ThRqD2l/ziSnryncPNn7bMLt5cFYsKVKBh8HqLqyCoTupEUu7Q==}
+    engines: {node: '>=20'}
     hasBin: true
 
   cross-spawn@7.0.6:
@@ -11870,6 +11873,8 @@ snapshots:
 
   '@emotion/unitless@0.8.1': {}
 
+  '@epic-web/invariant@1.0.0': {}
+
   '@es-joy/jsdoccomment@0.49.0':
     dependencies:
       comment-parser: 1.4.1
@@ -14368,8 +14373,9 @@ snapshots:
 
   croner@9.0.0: {}
 
-  cross-env@7.0.3:
+  cross-env@10.0.0:
     dependencies:
+      '@epic-web/invariant': 1.0.0
       cross-spawn: 7.0.6
 
   cross-spawn@7.0.6:
