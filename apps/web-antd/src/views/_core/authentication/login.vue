@@ -2,17 +2,21 @@
 import type { VbenFormSchema } from '@vben/common-ui';
 import type { BasicOption } from '@vben/types';
 
-import { computed, markRaw } from 'vue';
+import {computed, markRaw, onMounted, reactive} from 'vue';
 
 import { AuthenticationLogin, SliderCaptcha, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
-
+import { Card } from 'ant-design-vue';
 import { useAuthStore } from '#/store';
+import {fetchTvcContent, fetchWaiting} from "#/api/core";
 
 defineOptions({ name: 'Login' });
 
 const authStore = useAuthStore();
-
+const data = reactive({
+  serving : null,
+  waiting : null
+});
 const MOCK_USER_OPTIONS: BasicOption[] = [
   {
     label: 'Super',
@@ -27,6 +31,32 @@ const MOCK_USER_OPTIONS: BasicOption[] = [
     value: 'jack',
   },
 ];
+
+import { useSignatureStore } from '#/store/signature';
+
+const signatureStore = useSignatureStore();
+
+onMounted(async () => {
+  await signatureStore.fetchSignature();
+  const headers = {
+    'transaction-id': signatureStore?.transactionId,
+    'x-signature': signatureStore?.xSignature,
+    'channelid': 'a1',
+    'api-key': 'abiXhVLnRe',
+  };
+
+ const result = await fetchTvcContent(
+    { grapari_id: '9b8fea0564d69c85', limit: 4 },
+    headers,
+  );
+
+  const result_waiting = await fetchWaiting(
+    { grapari_id: '9b8fea0564d69c85', limit: 4 },
+    headers,
+  );
+  data.serving = result.data;
+  data.waiting = result_waiting.data;
+});
 
 const formSchema = computed((): VbenFormSchema[] => {
   return [
@@ -90,5 +120,11 @@ const formSchema = computed((): VbenFormSchema[] => {
 </script>
 
 <template>
- <span>testingss</span>
+  <div style="margin-top: 10px">
+      <Card :title="data?.serving?.grapari_name" :bordered="false" style="width: 300px">
+        <p>Serving : {{ data?.serving?.tvc_contents === null  ? 0 :  data?.serving?.tvc_contents?.length }}</p>
+        <p>Waiting : {{ data?.waiting?.total_queue_waiting.total_queue === null  ? 0 :  data?.waiting?.total_queue_waiting.total_queue }}</p>
+        <p>{{data.waiting }}</p>
+      </Card>
+  </div>
 </template>

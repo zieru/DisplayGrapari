@@ -9,7 +9,7 @@ import { useWatermark } from '@vben/hooks';
 import { BookOpenText, CircleHelp, MdiGithub } from '@vben/icons';
 import {
   BasicLayout,
-} from '@packages/effects/layouts/basic/layout.vue';
+} from '@vben/layouts';
 import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
@@ -120,19 +120,6 @@ watch(
 </script>
 
 <template>
-  <BasicLayout>
-    <template #user-dropdown>
-    </template>
-    <template #notification>
-      <Notification
-        :dot="showDot"
-        :notifications="notifications"
-        @clear="handleNoticeClear"
-        @make-all="handleMakeAll"
-      />
-    </template>
-    <template #extra>
-
-    </template>
+  <BasicLayout @clear-preferences-and-logout="handleLogout">
   </BasicLayout>
 </template>

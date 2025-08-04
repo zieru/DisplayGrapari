@@ -14,6 +14,8 @@ export const overridesPreferences = defineOverridesPreferences({
     "layout": "header-nav"
 
   },
+  header: {
+  },
   "sidebar": {
     "hidden": true
   },

@@ -37,7 +37,7 @@ const coreRoutes: RouteRecordRaw[] = [
         name: 'start',
         component: () => import('#/views/_core/authentication/login.vue'),
         meta: {
-          title: $t('page.auth.login'),
+          title: 'Display GraPARI',
           hideInTab: true,
         },
       },
