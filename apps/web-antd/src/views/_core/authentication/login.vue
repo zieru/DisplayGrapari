@@ -9,9 +9,14 @@ import { $t } from '@vben/locales';
 import { Button, Card, Divider, Tag, Statistic } from 'ant-design-vue';
 import { useAuthStore } from '#/store';
 import {fetchGraPARIDetail, fetchTvcContent, fetchWaiting} from "#/api/core";
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
+const grapariId = ref<string | null>(null);
+const nearest_grapari = ref([]);
 defineOptions({ name: 'Login' });
-
+const location = ref(null);
+const error = ref(null);
 const authStore = useAuthStore();
 const data = reactive({
   serving : null,
@@ -34,11 +39,51 @@ const MOCK_USER_OPTIONS: BasicOption[] = [
 ];
 
 import { useSignatureStore } from '#/store/signature';
+import {getGraPARIListApi} from "#/api";
 
 const signatureStore = useSignatureStore();
 const loading = ref(true)
 
+async function fetchLocation() {
+  try {
+    const coords = await getCurrentLocation();
+    location.value = coords;
+
+    console.log(location)
+  } catch (err) {
+    if (err.code === 1) {
+      error.value = 'User denied Geolocation access.';
+    } else {
+      error.value = err.message;
+    }
+    console.error('Error getting location:', err);
+  }
+}
+
+// Fungsi getCurrentLocation() yang sama seperti di atas
+function getCurrentLocation() {
+  return new Promise((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          resolve({ latitude, longitude });
+        },
+        (error) => {
+          reject(error);
+        }
+      );
+    } else {
+      reject(new Error("Geolocation is not supported by this browser."));
+    }
+  });
+}
+
 onMounted(async () => {
+  grapariId.value = route.query.id as string || null;
+  const x = await getGraPARIListApi({ grapari_id: '9b8fea0564d69c85', limit: 5 });
+  console.log('grap',x)
   await signatureStore.fetchSignature();
   const headers = {
     'transaction-id': signatureStore?.transactionId,

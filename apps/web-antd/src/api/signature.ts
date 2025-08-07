@@ -9,3 +9,11 @@ export function getSignatureApi() {
     'https://backend.tsel.my.id/signature'
   );
 }
+export function getGraPARIListApi( params) {
+  return baseRequestClient.get<{ message: string; data }>(
+    'https://backend.tsel.my.id/grapari',
+    {
+      params
+    }
+  );
+}
