@@ -111,7 +111,7 @@ function mergeGrapariAndAntrian(grapariList, antrianList) {
   }));
 }
 async function fetchData() {
-  loading.value = true;
+  //loading.value = true;
 
   try {
     grapariId.value = route.query.id as string || null;
