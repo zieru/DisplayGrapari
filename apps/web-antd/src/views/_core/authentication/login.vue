@@ -6,7 +6,7 @@ import {computed, markRaw, onMounted, reactive, ref} from 'vue';
 
 import { AuthenticationLogin, SliderCaptcha, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
-import { Button, Card, Divider, Tag, Statistic } from 'ant-design-vue';
+import { Col, Row, Button, Card, Divider, Tag, Statistic } from 'ant-design-vue';
 import { useAuthStore } from '#/store';
 import {fetchGraPARIDetail, fetchTvcContent, fetchWaiting} from "#/api/core";
 import { useRoute } from 'vue-router';
@@ -14,6 +14,8 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 const grapariId = ref<string | null>(null);
 const nearest_grapari = ref([]);
+const grapariCards = ref<any[]>([]);
+
 defineOptions({ name: 'Login' });
 const location = ref(null);
 const error = ref(null);
@@ -80,11 +82,7 @@ function getCurrentLocation() {
   });
 }
 
-onMounted(async () => {
-  grapariId.value = route.query.id as string || null;
-  const x = await getGraPARIListApi({ grapari_id: '9b8fea0564d69c85', limit: 5 });
-  console.log('grap',x)
-  await signatureStore.fetchSignature();
+async function getAntrian(grapari_id: string) {
   const headers = {
     'transaction-id': signatureStore?.transactionId,
     'x-signature': signatureStore?.xSignature,
@@ -92,24 +90,37 @@ onMounted(async () => {
     'api-key': 'abiXhVLnRe',
   };
 
+  const result = await fetchTvcContent({ grapari_id, limit: 4 }, headers);
+  const result_waiting = await fetchWaiting({ grapari_id, limit: 4 }, headers);
+  const result_detailgra = await fetchGraPARIDetail({ grapari_id }, headers);
+
+  return {
+    grapari_id,
+    serving: result.data,
+    waiting: result_waiting.data,
+    detail: result_detailgra.data,
+  };
+}
+
+onMounted(async () => {
+  grapariId.value = route.query.id as string || null;
+  const x = await getGraPARIListApi({ grapari_id: '9b8fea0564d69c85', limit: 5 });
+  nearest_grapari.value = x.data
+  await signatureStore.fetchSignature();
+
   try {
     loading.value = true
-    const result = await fetchTvcContent(
-      { grapari_id: '9b8fea0564d69c85', limit: 4 },
-      headers,
-    );
+    const grapariList = Array.isArray(x.data.data) ? x.data.data : [];
 
-    const result_waiting = await fetchWaiting(
-      { grapari_id: '9b8fea0564d69c85', limit: 4 },
-      headers,
+    // Ambil semua antrian paralel
+    const antrianResults = await Promise.all(
+      grapariList.map(g => getAntrian(g.KODE))
     );
-    const result_detailgra = await fetchGraPARIDetail(
-      { grapari_id: '9b8fea0564d69c85', limit: 4 },
-      headers,
-    );
-    data.serving = result.data;
-    data.waiting = result_waiting.data;
-    data.detail = result_detailgra.data;
+    grapariCards.value = antrianResults;
+    console.log('data',x.data);
+    console.log('cek',Array.isArray(x.data) )
+    console.log('grapariList',grapariList)
+    console.log('antrianResults',antrianResults)
 
   } finally {
     loading.value = false
@@ -199,65 +210,138 @@ const formSchema = computed((): VbenFormSchema[] => {
   ];
 });
 </script>
-
 <template>
-  <div style="margin-top: 10px">
-    <Card
-      :title="data?.detail?.grapari_detail?.grapari_name"
-      :bordered="false"
-      style="width: 100%; max-width: 400px"
-      v-if="data?.detail?.grapari_detail?.grapari_name"
-      :loading="loading"
-    >
-      <template #extra>
-        <Tag :color="checkOpen(data?.detail?.grapari_detail) ? 'green' : 'red'">
-          {{ checkOpen(data?.detail?.grapari_detail) ? 'Buka' : 'Tutup' }}
-        </Tag>
-      </template>
-
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <Statistic
-            title="Menunggu"
-            :value="data?.waiting?.total_queue_waiting?.total_queue <= 0 ? `` : data?.waiting?.total_queue_waiting?.total_queue"
-            valueStyle="color: #3ff600"
-            :suffix="data?.waiting?.total_queue_waiting?.total_queue >= 1 ? 'Pelanggan' : ``"
-          />
-        </div>
-        <div>
-          <Statistic
-            title="Sedang Dilayani"
-            v-if="data?.serving?.tvc_contents?.length >= 1"
-            :value="data?.serving?.tvc_contents?.length <= 0 ? `` : data?.serving?.tvc_contents?.length"
-            valueStyle="color: rgb(52 204 204)"
-            :suffix="data?.serving?.tvc_contents?.length >= 1 ? 'Pelanggan' : ``"
-          />
-          <span v-else> - </span>
-        </div>
-      </div>
-
-
-      <Divider dashed>
-        <strong>Alamat</strong>
-      </Divider>
-      <p>{{ data.detail?.grapari_detail?.address }}   <Button
-        :href="`https://www.google.com/maps?q=${data.detail?.grapari_detail?.latitude},${data.detail?.grapari_detail?.longitude}`"
-        target="_blank"
-        rel="noopener"
+  <Row :gutter="12">
+    <!-- Card pertama (utama), tampil di kiri -->
+    <Col :xs="24" :sm="8" :md="8">
+      <Card
+        :title="grapariCards[0]?.detail?.grapari_detail?.grapari_name"
+        :bordered="false"
+        style="width: 100%; height: 100%; margin-bottom: 20px"
+        :loading="loading"
       >
-        📍 Buka di Google Maps
-      </Button></p>
-      <Divider dashed>
-        <strong>Jam Operasional:</strong>
-      </Divider>
-      <ul>
-        <li>Senin–Jumat: {{ data.detail?.grapari_detail?.weekday_opening_operational_hour }} - {{ data.detail?.grapari_detail?.weekday_closing_operational_hour }}</li>
-        <li>Sabtu: {{ data.detail?.grapari_detail?.saturday_opening_operational_hour }} - {{ data.detail?.grapari_detail?.saturday_closing_operational_hour }}</li>
-        <li>Minggu: {{ data.detail?.grapari_detail?.sunday_opening_operational_hour }} - {{ data.detail?.grapari_detail?.sunday_closing_operational_hour }}</li>
-      </ul>
+        <template #extra>
+          <Tag :color="checkOpen(grapariCards[0]?.detail?.grapari_detail) ? 'green' : 'red'">
+            {{ checkOpen(grapariCards[0]?.detail?.grapari_detail) ? 'Buka' : 'Tutup' }}
+          </Tag>
+        </template>
 
-    </Card>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <Statistic
+              title="Menunggu"
+              :value="grapariCards[0]?.waiting?.total_queue_waiting?.total_queue || 0"
+              valueStyle="color: #3ff600"
+              :suffix="grapariCards[0]?.waiting?.total_queue_waiting?.total_queue >= 1 ? 'Pelanggan' : ``"
+            />
+          </div>
+          <div>
+            <Statistic
+              title="Sedang Dilayani"
+              v-if="grapariCards[0]?.serving?.tvc_contents?.length >= 1"
+              :value="grapariCards[0]?.serving?.tvc_contents?.length"
+              valueStyle="color: rgb(52 204 204)"
+              suffix="Pelanggan"
+            />
+            <span v-else>-</span>
+          </div>
+        </div>
+
+        <Divider dashed>
+          <strong>Alamat</strong>
+        </Divider>
+        <p>
+          {{ grapariCards[0]?.detail?.grapari_detail?.address }}
+          <Button
+            :href="`https://www.google.com/maps?q=${grapariCards[0]?.detail?.grapari_detail?.latitude},${grapariCards[0]?.detail?.grapari_detail?.longitude}`"
+            target="_blank"
+            rel="noopener"
+          >
+            📍 Buka di Google Maps
+          </Button>
+        </p>
+
+        <Divider dashed>
+          <strong>Jam Operasional:</strong>
+        </Divider>
+        <ul>
+          <li>Senin–Jumat: {{ grapariCards[0]?.detail?.grapari_detail?.weekday_opening_operational_hour }} - {{ grapariCards[0]?.detail?.grapari_detail?.weekday_closing_operational_hour }}</li>
+          <li>Sabtu: {{ grapariCards[0]?.detail?.grapari_detail?.saturday_opening_operational_hour }} - {{ grapariCards[0]?.detail?.grapari_detail?.saturday_closing_operational_hour }}</li>
+          <li>Minggu: {{ grapariCards[0]?.detail?.grapari_detail?.sunday_opening_operational_hour }} - {{ grapariCards[0]?.detail?.grapari_detail?.sunday_closing_operational_hour }}</li>
+        </ul>
+      </Card>
+    </Col>
+
+    <!-- Card sisanya di sebelah kanan -->
+    <Col :xs="24" :sm="16" :md="16">
+      <Row :gutter="12">
+        <Col
+          v-for="card in grapariCards.slice(1)"
+          :key="card.grapari_id"
+          :xs="24"
+          :sm="12"
+          :md="8"
+        >
+          <Card
+            :title="card?.detail?.grapari_detail?.grapari_name"
+            :bordered="false"
+            style="width: 100%; margin-bottom: 20px"
+            :loading="loading"
+          >
+            <template #extra>
+              <Tag :color="checkOpen(card?.detail?.grapari_detail) ? 'green' : 'red'">
+                {{ checkOpen(card?.detail?.grapari_detail) ? 'Buka' : 'Tutup' }}
+              </Tag>
+            </template>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <Statistic
+                  title="Menunggu"
+                  :value="card?.waiting?.total_queue_waiting?.total_queue || 0"
+                  valueStyle="color: #3ff600"
+                  :suffix="card?.waiting?.total_queue_waiting?.total_queue >= 1 ? 'Pelanggan' : ``"
+                />
+              </div>
+              <div>
+                <Statistic
+                  title="Sedang Dilayani"
+                  v-if="card?.serving?.tvc_contents?.length >= 1"
+                  :value="card?.serving?.tvc_contents?.length"
+                  valueStyle="color: rgb(52 204 204)"
+                  suffix="Pelanggan"
+                />
+                <span v-else>-</span>
+              </div>
+            </div>
+
+            <Divider dashed>
+              <strong>Alamat</strong>
+            </Divider>
+            <p>
+              {{ card?.detail?.grapari_detail?.address }}
+              <Button
+                :href="`https://www.google.com/maps?q=${card?.detail?.grapari_detail?.latitude},${card?.detail?.grapari_detail?.longitude}`"
+                target="_blank"
+                rel="noopener"
+              >
+                📍 Buka di Google Maps
+              </Button>
+            </p>
+
+            <Divider dashed>
+              <strong>Jam Operasional:</strong>
+            </Divider>
+            <ul>
+              <li>Senin–Jumat: {{ card?.detail?.grapari_detail?.weekday_opening_operational_hour }} - {{ card?.detail?.grapari_detail?.weekday_closing_operational_hour }}</li>
+              <li>Sabtu: {{ card?.detail?.grapari_detail?.saturday_opening_operational_hour }} - {{ card?.detail?.grapari_detail?.saturday_closing_operational_hour }}</li>
+              <li>Minggu: {{ card?.detail?.grapari_detail?.sunday_opening_operational_hour }} - {{ card?.detail?.grapari_detail?.sunday_closing_operational_hour }}</li>
+            </ul>
+          </Card>
+        </Col>
+      </Row>
+    </Col>
+  </Row>
 
 
-  </div>
 </template>
