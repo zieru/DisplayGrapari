@@ -211,9 +211,10 @@ const formSchema = computed((): VbenFormSchema[] => {
 });
 </script>
 <template>
-  <Row :gutter="12">
+  <Row :gutter="16">
     <!-- Card pertama (utama), tampil di kiri -->
     <Col :xs="24" :sm="8" :md="8">
+      <Card title="You Are Here | Anda Disini">
       <Card
         :title="grapariCards[0]?.detail?.grapari_detail?.grapari_name"
         :bordered="false"
@@ -270,6 +271,7 @@ const formSchema = computed((): VbenFormSchema[] => {
           <li>Minggu: {{ grapariCards[0]?.detail?.grapari_detail?.sunday_opening_operational_hour }} - {{ grapariCards[0]?.detail?.grapari_detail?.sunday_closing_operational_hour }}</li>
         </ul>
       </Card>
+      </Card>
     </Col>
 
     <!-- Card sisanya di sebelah kanan -->
@@ -320,13 +322,13 @@ const formSchema = computed((): VbenFormSchema[] => {
             </Divider>
             <p>
               {{ card?.detail?.grapari_detail?.address }}
-              <Button
+<!--              <Button
                 :href="`https://www.google.com/maps?q=${card?.detail?.grapari_detail?.latitude},${card?.detail?.grapari_detail?.longitude}`"
                 target="_blank"
                 rel="noopener"
               >
                 📍 Buka di Google Maps
-              </Button>
+              </Button>-->
             </p>
 
             <Divider dashed>
