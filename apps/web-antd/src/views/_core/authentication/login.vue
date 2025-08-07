@@ -101,32 +101,46 @@ async function getAntrian(grapari_id: string) {
     detail: result_detailgra.data,
   };
 }
-
-onMounted(async () => {
-  grapariId.value = route.query.id as string || null;
-  const x = await getGraPARIListApi({ grapari_id: '9b8fea0564d69c85', limit: 5 });
-  nearest_grapari.value = x.data
-  await signatureStore.fetchSignature();
+function mergeGrapariAndAntrian(grapariList, antrianList) {
+  return grapariList.map((g, i) => ({
+    ...antrianList[i],
+    KODE: g.KODE,
+    distance_km: g.distance_km,
+    name: g.Name,
+    alamat: g.Alamat,
+  }));
+}
+async function fetchData() {
+  loading.value = true;
 
   try {
-    loading.value = true
+    grapariId.value = route.query.id as string || null;
+    const x = await getGraPARIListApi({ grapari_id: grapariId.value, limit: 5 });
+    nearest_grapari.value = x.data;
+    await signatureStore.fetchSignature();
+
     const grapariList = Array.isArray(x.data.data) ? x.data.data : [];
 
-    // Ambil semua antrian paralel
     const antrianResults = await Promise.all(
-      grapariList.map(g => getAntrian(g.KODE))
+      grapariList.map((g) => getAntrian(g.KODE))
     );
-    grapariCards.value = antrianResults;
-    console.log('data',x.data);
-    console.log('cek',Array.isArray(x.data) )
-    console.log('grapariList',grapariList)
-    console.log('antrianResults',antrianResults)
 
+    grapariCards.value = mergeGrapariAndAntrian(grapariList, antrianResults);
+  } catch (err) {
+    console.error("Gagal refresh data:", err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
+}
 
+onMounted(async () => {
+  await fetchData(); // Panggil pertama kali
+
+  setInterval(async () => {
+    await fetchData(); // Auto-refresh setiap 30 detik
+  }, 10_000);
 });
+
 function checkOpen(grapari) {
   const now = new Date();
   const currentDay = now.getDay(); // 0: Minggu, 1: Senin, ..., 6: Sabtu
@@ -212,13 +226,13 @@ const formSchema = computed((): VbenFormSchema[] => {
 </script>
 <template>
   <Row :gutter="16">
-    <!-- Card pertama (utama), tampil di kiri -->
     <Col :xs="24" :sm="8" :md="8">
       <Card title="You Are Here | Anda Disini">
       <Card
+        id="head-grapari"
         :title="grapariCards[0]?.detail?.grapari_detail?.grapari_name"
-        :bordered="false"
-        style="width: 100%; height: 100%; margin-bottom: 20px"
+        :bordered="true"
+        style="width: 100%; height: 100%; margin-bottom: 20px;"
         :loading="loading"
       >
         <template #extra>
@@ -253,23 +267,16 @@ const formSchema = computed((): VbenFormSchema[] => {
         </Divider>
         <p>
           {{ grapariCards[0]?.detail?.grapari_detail?.address }}
-          <Button
-            :href="`https://www.google.com/maps?q=${grapariCards[0]?.detail?.grapari_detail?.latitude},${grapariCards[0]?.detail?.grapari_detail?.longitude}`"
-            target="_blank"
-            rel="noopener"
-          >
-            📍 Buka di Google Maps
-          </Button>
         </p>
 
-        <Divider dashed>
-          <strong>Jam Operasional:</strong>
-        </Divider>
+        <Divider dashed/>
+        <div  style="font-size: x-small">
         <ul>
           <li>Senin–Jumat: {{ grapariCards[0]?.detail?.grapari_detail?.weekday_opening_operational_hour }} - {{ grapariCards[0]?.detail?.grapari_detail?.weekday_closing_operational_hour }}</li>
           <li>Sabtu: {{ grapariCards[0]?.detail?.grapari_detail?.saturday_opening_operational_hour }} - {{ grapariCards[0]?.detail?.grapari_detail?.saturday_closing_operational_hour }}</li>
           <li>Minggu: {{ grapariCards[0]?.detail?.grapari_detail?.sunday_opening_operational_hour }} - {{ grapariCards[0]?.detail?.grapari_detail?.sunday_closing_operational_hour }}</li>
         </ul>
+        </div>
       </Card>
       </Card>
     </Col>
@@ -294,10 +301,14 @@ const formSchema = computed((): VbenFormSchema[] => {
               <Tag :color="checkOpen(card?.detail?.grapari_detail) ? 'green' : 'red'">
                 {{ checkOpen(card?.detail?.grapari_detail) ? 'Buka' : 'Tutup' }}
               </Tag>
+
+              {{ card?.distance_km?.toFixed(2) }} Km
             </template>
+
 
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
+
                 <Statistic
                   title="Menunggu"
                   :value="card?.waiting?.total_queue_waiting?.total_queue || 0"
@@ -331,14 +342,14 @@ const formSchema = computed((): VbenFormSchema[] => {
               </Button>-->
             </p>
 
-            <Divider dashed>
-              <strong>Jam Operasional:</strong>
-            </Divider>
+            <Divider dashed/>
+            <div  style="font-size: x-small">
             <ul>
               <li>Senin–Jumat: {{ card?.detail?.grapari_detail?.weekday_opening_operational_hour }} - {{ card?.detail?.grapari_detail?.weekday_closing_operational_hour }}</li>
               <li>Sabtu: {{ card?.detail?.grapari_detail?.saturday_opening_operational_hour }} - {{ card?.detail?.grapari_detail?.saturday_closing_operational_hour }}</li>
               <li>Minggu: {{ card?.detail?.grapari_detail?.sunday_opening_operational_hour }} - {{ card?.detail?.grapari_detail?.sunday_closing_operational_hour }}</li>
             </ul>
+            </div>
           </Card>
         </Col>
       </Row>
@@ -347,3 +358,10 @@ const formSchema = computed((): VbenFormSchema[] => {
 
 
 </template>
+
+
+<style>
+div#head-grapari > .ant-card-head {
+  background: #e81844;
+}
+</style>
